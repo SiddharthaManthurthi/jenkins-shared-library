@@ -35,6 +35,23 @@ def updateCommitStatus(String state, String description, String context = 'Jenki
     }
 }
 
+// Reads the app version from the project's version file.
+// Auto-detects language by checking which file exists in the workspace:
+//   package.json  → Node.js
+//   pom.xml       → Java
+//   requirements.txt → Python (reads version.txt)
+def readAppVersion() {
+    if (fileExists('package.json')) {
+        return readJSON(file: 'package.json').version
+    } else if (fileExists('pom.xml')) {
+        return readMavenPom(file: 'pom.xml').version
+    } else if (fileExists('requirements.txt')) {
+        return sh(script: "cat version.txt", returnStdout: true).trim()
+    } else {
+        error("readAppVersion: cannot detect language — no package.json, pom.xml, or requirements.txt found in workspace")
+    }
+}
+
 // Creates a Jira Cloud issue via the JIRA Pipeline Steps plugin (site: 'jira').
 // Auto-assigns to the active sprint. Returns the created issue key (e.g. ROBO-42).
 def createJiraTicket(String project, String component, String appVersion, String shortCommit) {
